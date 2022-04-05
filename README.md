@@ -1,0 +1,1 @@
+# hot-coin-auto-trade

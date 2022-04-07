@@ -1,12 +1,18 @@
 # -*- coding:UTF-8 -*-
 # !/usr/bin/env python
-import hmac
-import hashlib
-import requests
 import base64
-
+import hashlib
+import hmac
+import logging
+import traceback
 import urllib
+from collections import namedtuple
 from datetime import datetime
+
+import requests
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 def get_utc_str():
@@ -33,7 +39,7 @@ def http_get_request(url, params, timeout=10):
         return
 
 
-class HotCoin:
+class Vaex:
     def __init__(self, API_HOST='api.hotcoinfin.com', symbol=""):
         self.secret = None
         self.key = None
@@ -41,7 +47,7 @@ class HotCoin:
         self.API_RUL = 'https://' + self.API_HOST + '/v1/'
         self.symbol = symbol
         if not self.symbol:
-            print("Init error, please add symbol")
+            logging.error("Init error, please add symbol")
         requests.packages.urllib3.disable_warnings()
 
     def auth(self, key, secret):
@@ -56,7 +62,7 @@ class HotCoin:
             r = requests.request(method, r_url, params=payload)
             r.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            print(err)
+            logging.error(err)
         if r.status_code == 200:
             return r.json()
 
@@ -72,7 +78,7 @@ class HotCoin:
     def api_key_request(self, method, API_URI, **params):
         """request a signed url"""
         if not self.key or not self.secret:
-            print("Please config api key and secret")
+            logging.error("Please config api key and secret")
             exit(-1)
         params_to_sign = {'AccessKeyId': self.key,
                           'SignatureMethod': 'HmacSHA256',
@@ -91,8 +97,7 @@ class HotCoin:
             elif method == 'POST':
                 return http_post_request(url, params_to_sign, 10)
         except requests.exceptions.HTTPError as err:
-            print(err)
-            print('request error')
+            traceback.print_exc()
 
     def get_depth(self):
         """get market depth"""
@@ -108,15 +113,10 @@ class HotCoin:
 
     def trade(self, price, amount, direction):
         """trade someting, buy(1) or sell(0)"""
-        try:
-            if direction == 1:
-                return self.buy(price, amount)
-            else:
-                return self.sell(price, amount)
-        except Exception as e:
-            print(e)
-            print("Trade error")
-            return "Trade error"
+        if direction == 1:
+            return self.buy(price, amount)
+        else:
+            return self.sell(price, amount)
 
     def buy(self, price, amount):
         """buy someting(done)"""
@@ -124,28 +124,58 @@ class HotCoin:
 
     def sell(self, price, amount):
         """sell someting(done)"""
-        return self.create_order(symbol=self.symbol, type='sell', tradePrice=price, tradeAmount=amount)
+        return self.create_order(symbol=self.symbol, type='buy', tradePrice=price, tradeAmount=amount)
 
-    # def get_order(self, order_id):
-    #     """get specfic order(done)"""
-    #     return self.signed_request('GET', 'order', orderId=order_id, symbol=self.symbol)
+    def get_order(self, order_id):
+        """get specfic order(done)"""
+        return self.api_key_request('GET', 'order/detailById', id=order_id)
 
     def get_open_order(self):
         """get specfic order(done)"""
-        return self.api_key_request('GET', 'order/entrust', symbol=self.symbol, tpye=1, count=100)
-
-    # def create_order_test(self):
-    #     """get specfic order(done)"""
-    #     # {"symbol":"BTCUSDT","price":"9300","volume":"1","side":"BUY","type":"LIMIT"} Copied!
-    #     return self.signed_request('GET', 'order/test', symbol=self.symbol, volume=1, side="BUY", type="LIMIT",
-    #                                price=9300)
+        return self.api_key_request('GET', 'order/entrust', symbol=self.symbol, type=1, count=100)
 
     def cancel_order(self, order_id):
         """cancel specfic order(done)"""
         return self.api_key_request('POST', 'order/cancel', id=order_id)
 
+    def get_current_order(self):
+        """get current orders"""
+        return self.api_key_request('GET', 'order/entrust', symbol=self.symbol, type=1, count=100)
+
+    def get_my_trade(self):
+        """get my trades"""
+        return self.api_key_request('GET', 'order/matchresults', symbol=self.symbol)
+
+    def check_trade_status(self, order_ret):
+        if 'code' in order_ret:
+            if order_ret['code'] == 200:
+                return True
+            else:
+                return False
+
+    def check_depth_status(self, depth_ret):
+        if 'data' in depth_ret and 'depth' in depth_ret['data'] and 'asks' in depth_ret['data']['depth'] and 'bids' in depth_ret['data']['depth']:
+            return True
+        else:
+            return False
+
+    def get_depth_list(self, depth_direction='asks'):
+        depth_infos = self.get_depth()
+        if self.check_depth_status(depth_infos):
+            depth_infos = depth_infos['data']['depth'][depth_direction]
+            if len(depth_infos) > 0:
+                return depth_infos
+
+
+CancelRecord = namedtuple('CancelRecord', ['orderId', 'side', 'price', 'origQty', 'executedQty', 'time'])
 
 if __name__ == "__main__":
-    print("Start...")
-    hot_coin = HotCoin(symbol="apg_usdt")
-    print(hot_coin.get_depth())
+    logging.info("Start...")
+    from default_config import config
+
+    vaex = Vaex(symbol=config['symbol'])
+    vaex.auth(key=config['key'], secret=config['secret'])
+    # logging.info(vaex.get_depth())
+    logging.info(vaex.get_order(61964762655))
+    # target_trade_action(vaex=vaex, adjusted_percent=0.01)
+    # target_trade_allocation(vaex, 0.01, 0, 2)

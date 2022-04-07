@@ -94,22 +94,22 @@ def wave_trade_pool(vaex):
                 wave_times = utils.random_num(
                     min_val = int(now_time),
                     max_val = int(end_time),
-                    num = wave_num,
+                    num = int(wave_num),
                     sigma = 1)
                 wave_percentages = utils.random_num(
                     min_val = config['wave_trade_auto_min_percentage'],
                     max_val = config['wave_trade_auto_max_percentage'],
-                    num = wave_num,
+                    num = int(wave_num),
                     sigma = 10000)
                 while True:
-                    now_day = utils.get_now_time_str(time_format='%Y%m%d%')
+                    now_day = utils.get_now_time_str(time_format='%Y%m%d')
                     if now_day > start_day:
                         break
                     now_time = utils.get_now_time_str(time_format='%Y%m%d%H%M%S')
                     for index, start_time in enumerate(wave_times):
                         print(start_time)
                         print(now_time)
-                        if now_time > start_time and int(now_time)-int(start_time) < 60:
+                        if int(now_time) > start_time and int(now_time)-int(start_time) < 60:
                             # time check pass
                             print('ok')
                             wave_percentage = wave_percentages[index]

@@ -24,7 +24,7 @@ config = {
     #################################
     # 波动交易配置
     # 自动配置
-    'wave_trade_auto_on': True, # 是否启用自动波动交易, True or False
+    'wave_trade_auto_on': False, # 是否启用自动波动交易, True or False
     'wave_trade_auto_min_percentage': -0.01, #自动波动交易:波动下限
     'wave_trade_auto_max_percentage': 0.01, #自动波动交易:波动上限
     'wave_trade_auto_min_action_num': 1, #自动波动交易:波动次数下限'

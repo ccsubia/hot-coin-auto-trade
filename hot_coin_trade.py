@@ -29,11 +29,6 @@ async def get_dpeth(websocket):
     ret = json.loads(ret)
     sellprice, sellvolume = [], []
     buyprice, buyvolume = [], []
-    if 'ping' in ret:
-        await websocket.send('{"pong": "pong"}')
-        recv_text = await websocket.recv()
-        ret = zlib.decompress(recv_text, 16 + zlib.MAX_WBITS).decode('utf-8')
-        ret = json.loads(ret)
     if 'data' in ret:
         depth_data = ret['data']
         if ('asks' in depth_data) and ('bids' in depth_data):
@@ -181,7 +176,7 @@ async def addentrust(websocket):
 
 # 延迟一分钟后，陆续撤单（撤单顺序随机）
 def adjustable_cancel():
-    # time.sleep(30)
+    time.sleep(30)
     while True:
         try:
             result = hot_coin.get_open_order()
@@ -217,18 +212,18 @@ cross_trade_price_min = 0.2185
 
 
 def func(target_func):
-    # while True:
-    try:
-        print("Start main func...")
+    while True:
+        try:
+            print("Start main func...")
 
-        async def main_logic():
-            async with websockets.connect(ADDR, ping_interval=None) as websocket:
-                await target_func(websocket)
+            async def main_logic():
+                async with websockets.connect(ADDR, ping_interval=None) as websocket:
+                    await target_func(websocket)
 
-        asyncio.get_event_loop().run_until_complete(main_logic())
-    except Exception as e:
-        print(e)
-        print("main func failed, restart")
+            asyncio.get_event_loop().run_until_complete(main_logic())
+        except Exception as e:
+            print(e)
+            print("main func failed, restart")
 
 
 if __name__ == "__main__":
@@ -236,6 +231,5 @@ if __name__ == "__main__":
     pool.apply_async(func, (self_trade,))
     pool.apply_async(func, (addentrust,))
     pool.apply_async(adjustable_cancel)
-    # pool.apply_async(func, (test_depth,))
     pool.close()
     pool.join()

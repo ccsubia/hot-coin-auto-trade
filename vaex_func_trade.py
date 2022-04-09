@@ -102,6 +102,8 @@ async def self_trade(vaex, websocket):
         except Exception as e:
             traceback.print_exc()
             time.sleep(2)
+            if self_cnt > 5:
+                break
         self_cnt += 1
 
 # cross trade
@@ -151,6 +153,8 @@ async def cross_trade(vaex, websocket):
         except Exception as e:
             traceback.print_exc()
             time.sleep(2)
+            if cross_cnt > 5:
+                break
         cross_cnt += 1
 
 # cancel trade

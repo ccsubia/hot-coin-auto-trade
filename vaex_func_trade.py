@@ -32,6 +32,8 @@ async def get_dpeth(websocket):
     ret = json.loads(ret)
     sellprice, sellvolume = [], []
     buyprice, buyvolume = [], []
+    if 'ping' in ret:
+        await websocket.send('{"pong": "pong"}')
     if 'data' in ret:
         depth_data = ret['data']
         if ('asks' in depth_data) and ('bids' in depth_data):
